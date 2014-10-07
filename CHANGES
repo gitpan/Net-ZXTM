@@ -1,0 +1,131 @@
+==================================================
+Changes from 2013-10-07 00:00:00 +0000 to present.
+==================================================
+
+------------------------------------------
+version 0.001 at 2014-10-07 19:45:59 +0000
+------------------------------------------
+
+  Change: 40f5f2f940fea72f802705315195f9d2d11dc251
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-10-07 15:44:06 +0000
+
+    ignore cruft 
+
+  Change: 3b8764af0cd26e953e5b51f1ff1d6033e5113e2f
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-10-07 15:42:59 +0000
+
+    add rpm 
+
+  Change: a4271678972d4de694a3f66801abc29db3b9c036
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-10-07 15:34:38 +0000
+
+    cleanup 
+
+  Change: 6ebb88c4ea50881e5590be4c8a321adedb9294c9
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-10-07 15:34:21 +0000
+
+    cleanup 
+
+  Change: afab4c7c1aa19326090ca7c4e5d4067fe3596156
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-10-06 21:07:14 +0000
+
+    tyop 
+
+  Change: 3da8a206f9c86b237d60913b81666a00a7241bef
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-10-06 21:06:24 +0000
+
+    cleanup 
+
+  Change: 4c506d3d6f2a900021c5607f11e44b1adfd6a6c6
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-10-06 17:06:36 +0000
+
+    perl tidy 
+
+  Change: ddd99b0c2da6dfd873662700c7237b45e4aca82c
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-10-06 16:57:04 +0000
+
+    fixups and way too much dev work 
+
+  Change: 25e211ddef56907f1e19d3c93c31f53b533432e1
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-09-18 11:57:05 +0000
+
+    massive change, break-out graphing in separate script 
+
+  Change: d1100bce7fa535bbc8f28825f6a5d4b30833b92b
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-09-18 11:56:54 +0000
+
+    massive change, break-out graphing in separate script 
+
+  Change: 50b4a4de7e0f1fd9f5feeb18e3163137c0d93d40
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-09-09 13:43:05 +0000
+
+    dont put object in the TT data 
+
+  Change: ed1ba1d4134e93cc9d28d098243ebcf3c718368e
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-09-09 13:21:48 +0000
+
+    drop 
+
+  Change: f221370a70411546241bb2a1525cecced219b829
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-09-05 16:07:35 +0000
+
+    perl tidy 
+
+  Change: 95e46cabb5793ae4c1f9cb3866c6bb44b3e01539
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-09-05 15:31:11 +0000
+
+    WIP: detect problems in ssl and pools 
+
+  Change: 9a0b9b6232ff9642be8192af83c27f983e828d07
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-09-04 12:51:27 +0000
+
+    report errors cleanly 
+
+  Change: 98a8b2a64d2946300e8891c0a4b9e35360effe13
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-09-04 12:36:48 +0000
+
+    ignore generated dists 
+
+  Change: 80f7ebee75aac2cddc3892f3a0825eb0eaa1dec1
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-09-04 12:36:22 +0000
+
+    Initial drop 
+
+  Change: 3123a252ddb1220c5af43aaefaf3d3ae497796ab
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-09-04 12:36:14 +0000
+
+    cleanup 
+
+  Change: 9fbb6b4043f811a18b74e8f8f50f79f0b7c97c96
+  Author: Philippe M. Chiasson <gozer@mozilla.com>
+  Date : 2014-09-04 12:34:39 +0000
+
+    initial drop 
+
+  Change: 375925d6fda4dc662348c35814bd3fccc003048d
+  Author: Philippe M. Chiasson <gozer@ectoplasm.org>
+  Date : 2014-09-04 10:18:50 +0000
+
+    Initial commit 
+
+================
+End of releases.
+================

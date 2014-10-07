@@ -1,0 +1,268 @@
+#!/usr/bin/env perl
+
+#PODNAME: zxtm
+
+use strict;
+use warnings;
+
+local $| = 1;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Config::IniFiles;
+
+use JSON;
+
+use Net::ZXTM;
+use Number::Format qw(:subs);
+use Time::Duration;
+use URI::Escape ();
+use Crypt::OpenSSL::X509;
+
+use Data::Dumper;
+
+use Template;
+
+my $cfg = Config::IniFiles->new( 
+  -file => "$FindBin::Bin/../zxtm.conf",
+  -fallback => "global",
+  -default => "global",
+) || die "Can't read zxtm.conf";
+
+my $tt = Template->new({
+               INCLUDE_PATH => "$FindBin::Bin/../tt",  # or list ref
+               INTERPOLATE  => 1,               # expand "$var" in plain text
+               TRIM         => 1,               # cleanup whitespace
+               EVAL_PERL    => 1,               # evaluate Perl code blocks
+           });
+
+my $invocation = join " ", ( '$>', $0, @ARGV);
+print "$invocation\n";
+
+# Clusters
+my %zxtms;
+
+# Nodes
+my %zxtm_nodes;
+
+foreach my $section ($cfg->Sections) {
+    next if $section eq 'global';
+   
+    my $url = $cfg->val($section, 'url');
+    my $username = $cfg->val($section, 'username', $ENV{ZXTM_USER});
+    my $password = $cfg->val($section, 'password', $ENV{ZXTM_PASS});
+
+    my $uri  = URI->new($url);
+    my $host = $uri->host;
+
+    my $zxtm = Net::ZXTM->new( $url, $username, $password);
+    
+    #Remember each TM by its url for now
+    #XXX: Cheat
+    my $web_url = URI->new($uri);
+    $web_url->port(9090);
+    $zxtms{$url} = {
+      url => $web_url->as_string(),
+    };
+
+    my $resp = $zxtm->call("/status");
+
+    my %zxtm;
+
+    my %stats;
+    foreach my $zxtm (@$resp) {
+        next if ( 'local_tm' eq $zxtm->{name} );
+        $zxtm{ $zxtm->{name} } = 1;
+	$zxtm_nodes{$zxtm->{name}} = 1;
+	#my $stat =
+         # $zxtm->call("/status/$tm/statistics/globals")->{statistics};
+       # $stats{$tm} = $stat;
+    }
+    
+    my $total_zxtm = scalar keys %zxtm;
+
+    print "Info for $total_zxtm nodes cluster : " . $url . "\n";
+
+    $zxtms{$url}{cluster_nodes} = \%zxtm;
+    $zxtms{$url}{config} = check_config($zxtm);
+    $zxtms{$url}{ssl}   = check_ssl($zxtm);
+    $zxtms{$url}{pools} = check_pools($zxtm);
+    
+}
+
+my $when = time;
+my $tt_data = {
+  when => $when,
+  invocation => $invocation,
+  zxtms => \%zxtms,
+};
+
+print STDERR "Producing HTML\n";
+
+$tt->process('index.tt', $tt_data, 'index.html')
+               || die $tt->error(), "\n";
+	       
+foreach my $zxtm_node (sort keys %zxtm_nodes) {
+  my $node_data = {
+    when => $when,
+    name => $zxtm_node,
+    invocation => $invocation,
+  };
+  $tt->process('zeus_node.tt', $node_data, "${zxtm_node}.html")
+               || die $tt->error(), "\n"; 
+}	       
+
+use Storable;
+store $tt_data, 'index.storable';
+
+open (my $jdump, ">", "index.json");
+print $jdump encode_json($tt_data);
+close($jdump);
+
+
+sub check_config {
+  my $zxtm = shift;
+
+  #No checks yet
+  
+  my $global_config = $zxtm->call("/config/active/global_settings");
+
+  return $global_config->{properties}
+}
+
+sub check_ssl {
+    my $zxtm = shift;
+    print "** Checking SSL\n";
+
+    my $certs = $zxtm->call("/config/active/ssl/server_keys");
+
+    my %certs;
+    foreach my $cert (@$certs) {
+        my $name = $cert->{name};
+        my $info = $zxtm->call("/config/active/ssl/server_keys/$name");
+
+        $certs{$name}{note} = $info->{properties}{basic}{note};
+	
+        my $x509 = Crypt::OpenSSL::X509->new_from_string(
+            $info->{properties}{basic}{public} );
+
+        $certs{$name}{not_before} = $x509->notBefore();
+        $certs{$name}{not_after}  = $x509->notAfter();
+        $certs{$name}{subject}    = $x509->subject();
+        $certs{$name}{valid_now}  = !$x509->checkend(0);
+        $certs{$name}{valid_soon} = !$x509->checkend( 60 * 60 * 24 * 30 );
+        
+	my $status = "ok";
+	
+        if (!$certs{$name}{valid_now} or !$certs{$name}{valid_soon}) {
+            
+	    # Identify issues that have been already handled
+	    # NOWARN: in the notes or something that smells like a bugzilla bug id
+	    if ( $certs{$name}{note} =~ /NOWARN:/ or $certs{$name}{note} =~ /id=\d+/ ) {
+	      $status = "acknowledged";
+	    }
+            elsif ( !$certs{$name}{valid_now} ) {
+                $status = "expired";
+            }          
+	    elsif ( !$certs{$name}{valid_soon} ) {
+                $status = "expiring";
+            }
+
+            print " * [$status] $name Expires on $certs{$name}{not_after}\n";
+        }
+	
+	
+	$certs{$name}{status} = $status;
+	
+    }
+    
+    return \%certs;
+}
+
+sub check_pools {
+    my $zxtm = shift;
+
+    print "** Checking pools\n";
+
+    my $pools = $zxtm->call("/config/active/pools");
+
+    my %pools;
+    foreach my $pool (@$pools) {
+        my $name = $pool->{name};
+
+        $pools{$name}{info} = $zxtm->call("/config/active/pools/$name");
+        $pools{$name}{note} = URI::Escape::uri_unescape(
+            $pools{$name}{info}{properties}{basic}{note} );
+        $pools{$name}{nodes} = {};
+
+        my $node_count =
+          @{ $pools{$name}{info}{properties}{basic}{nodes_table} };
+        my $interesting;
+
+        foreach
+          my $node ( @{ $pools{$name}{info}{properties}{basic}{nodes_table} } )
+        {
+            my $state = $node->{state} || '*no-state*';
+            $interesting++ if $state ne 'active';
+        }
+
+        if ($interesting) {
+	    $pools{$name}{interesting} = 1;
+            print " Pool $name ($node_count nodes):\n";
+            print "  * Note: $pools{$name}{note}\n" if $pools{$name}{note};
+
+            foreach my $node (
+                @{ $pools{$name}{info}{properties}{basic}{nodes_table} } )
+            {
+                my $name = $node->{node};
+
+                if ( $name =~ /(\d+\.\d+\.\d+\.\d+):(\d+)/ ) {
+                    my $port = $2;
+                    my $ip   = $1;
+
+                    use Socket;
+                    my $fqdn = gethostbyaddr( inet_aton($ip), AF_INET );
+                    if ($fqdn) {
+                        $name = "$fqdn($ip):$port";
+                    }
+
+                }
+
+                my $state = $node->{state} || '*no-state*';
+                print "  + [$state] $name\n";
+            }
+
+        }
+    }
+    
+    return \%pools;
+}
+
+__END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+zxtm
+
+=head1 VERSION
+
+version 0.001
+
+=head1 AUTHOR
+
+Philippe M. Chiasson <gozer@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2014 by Philippe M. Chiasson.
+
+This is free software, licensed under:
+
+  Mozilla Public License Version 2.0
+
+=cut

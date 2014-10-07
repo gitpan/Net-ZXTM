@@ -1,0 +1,47 @@
+<table border=1>
+[% FOREACH cert IN certs.keys.sort %]
+  [% c = certs.$cert %]
+  [% IF c.status != "ok" %]
+
+  [% IF c.status == "expired" %]
+    [% color = "red" %]
+  [% ELSE %]
+    [% color = "orange" %]
+  [% END %]
+
+  [% PERL %]
+    #XXX: Extract links in notes
+    use CGI qw(escapeHTML);
+    use URI::Find;
+
+    my $note = $stash->get('c.note');
+    
+    if ($note) {
+      my $finder = URI::Find->new(sub {
+        my($uri, $orig_uri) = @_;
+        return qq|<a href="$uri">$orig_uri</a>|;
+      });
+      $finder->find(\$note, \&escapeHTML);
+      $stash->set('c.note', $note); 
+    }
+    
+  
+  [% END %]
+
+  <tr>
+    <td bgcolor="[% color %]">
+      [% c.status %]
+    </td>
+    <td bgcolor=lightgrey>
+      [% c.not_after %]
+    </td>
+    <td bgcolor=lightgrey>
+      <a target="_blank" href="[% zxtm.url %]/apps/zxtm/?name=[% cert %]&section=SSL%3ASSL%20Certs%3AEdit">[% cert %]</a>
+  [% IF c.note %]
+    ( [% c.note %] )
+  [% END %]
+    </td>
+  </tr>
+  [% END %]
+[% END %]
+</table>

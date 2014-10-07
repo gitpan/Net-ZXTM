@@ -1,0 +1,54 @@
+{
+   "abstract" : "Zeus Traffic Manager REST API",
+   "author" : [
+      "Philippe M. Chiasson <gozer@cpan.org>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Dist::Zilla version 5.019, CPAN::Meta::Converter version 2.132140",
+   "license" : [
+      "open_source"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "Net-ZXTM",
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "6.30"
+         }
+      },
+      "develop" : {
+         "requires" : {
+            "Test::Pod" : "1.41"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "Config::IniFiles" : "0",
+            "Crypt::OpenSSL::X509" : "0",
+            "Data::Dumper" : "0",
+            "File::Find" : "0",
+            "FindBin" : "0",
+            "IO::Socket::SSL" : "0",
+            "JSON" : "0",
+            "LWP" : "0",
+            "Number::Format" : "0",
+            "RRD::Simple" : "0",
+            "Socket" : "0",
+            "Storable" : "0",
+            "Template" : "0",
+            "Time::Duration" : "0",
+            "URI::Escape" : "0",
+            "constant" : "0",
+            "lib" : "0",
+            "strict" : "0",
+            "warnings" : "0"
+         }
+      }
+   },
+   "release_status" : "testing",
+   "version" : "0.001"
+}
+

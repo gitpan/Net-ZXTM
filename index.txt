@@ -1,0 +1,23 @@
+$> ./bin/zxtm
+Info for 2 nodes cluster : https://zlb1.private.corp.phx1.mozilla.com:9070
+** Checking SSL
+** Checking pools
+ Pool intranet-db-ro:3306 (2 nodes):
+  + [active] intranet2.db.corp.phx1.mozilla.com(10.20.70.26):3306
+  + [disabled] intranet1.db.corp.phx1.mozilla.com(10.20.70.25):3306
+ Pool intranet-db-rw:3306 (2 nodes):
+  + [disabled] intranet2.db.corp.phx1.mozilla.com(10.20.70.26):3306
+  + [active] intranet1.db.corp.phx1.mozilla.com(10.20.70.25):3306
+ Pool intranet-stage-db-ro:3306 (2 nodes):
+  + [draining] intranet1.stage.db.corp.phx1.mozilla.com(10.20.70.27):3306
+  + [active] intranet2.stage.db.corp.phx1.mozilla.com(10.20.70.28):3306
+ Pool intranet-stage-db-rw:3306 (2 nodes):
+  + [active] intranet1.stage.db.corp.phx1.mozilla.com(10.20.70.27):3306
+  + [draining] intranet2.stage.db.corp.phx1.mozilla.com(10.20.70.28):3306
+Info for 2 nodes cluster : https://zlb1.ops.phx1.mozilla.com:9070
+** Checking SSL
+** Checking pools
+ Pool bugzilla-ro-db (3 nodes):
+  + [disabled] bugzilla3.db.phx1.mozilla.com(10.8.70.167):3306
+  + [active] bugzilla4.db.phx1.mozilla.com(10.8.70.168):3306
+  + [active] bugzilla2.db.phx1.mozilla.com(10.8.70.166):3306

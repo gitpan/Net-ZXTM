@@ -1,0 +1,189 @@
+#!/usr/bin/env perl
+
+#PODNAME: ZXTM Grapher
+
+use strict;
+use RRD::Simple;
+ 
+use strict;
+use warnings;
+
+local $| = 1;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use File::Find;
+
+use Net::ZXTM;
+
+use Data::Dumper;
+
+#$RRD::Simple::DEBUG=1;
+$RRD::Simple::DEFAULT_DSTYPE = "COUNTER";
+
+use constant INTERVAL => 60;
+
+my %zxtms;
+
+use Config::IniFiles;
+
+my $cfg = Config::IniFiles->new( 
+  -file => "$FindBin::Bin/../zxtm.conf",
+  -fallback => "global",
+  -default => "global",
+) || die "Can't read zxtm.conf";
+
+foreach my $section ($cfg->Sections) {
+    next if $section eq 'global';
+   
+    my $url = $cfg->val($section, 'url');
+    my $username = $cfg->val($section, 'username', $ENV{ZXTM_USER});
+    my $password = $cfg->val($section, 'password', $ENV{ZXTM_PASS});
+    
+    my $uri  = URI->new($url);
+    my $host = $uri->host;
+
+    my $zxtm = Net::ZXTM->new( $url, $username, $password);
+
+    my $resp = $zxtm->call("/status");
+
+    my %zxtm;
+    foreach my $zxtm (@$resp) {
+        next if ( 'local_tm' eq $zxtm->{name} );
+	my $rrd_path = "rrd/$zxtm->{name}.rrd";
+        my $rrd = RRD::Simple->new(
+	  cf => [qw(AVERAGE MIN MAX  LAST)],
+	  default_dstype => "COUNTER",
+	  file => $rrd_path
+	  );
+	$zxtm{$zxtm->{name}}{rrd} = $rrd;
+    }
+    
+    my $total_zxtm = scalar keys %zxtm;
+
+    print "Info for $total_zxtm nodes cluster : " . $url . "\n";
+
+    my $now = time;
+
+    # Inject synthetic total host, don't like duplication here
+    my $rrd_path = "rrd/global/$host.rrd";
+    $zxtm{"global-$host"}{rrd} = RRD::Simple->new(
+      cf => [qw(AVERAGE MIN MAX  LAST)],
+      file => $rrd_path
+    );
+ 
+    print STDERR "Producing graphs ...\n";
+    # Produce graphs (Should be out of the loop)
+    foreach my $tm ( sort keys %zxtm ) {
+    
+        ( my $tm_name = $tm ) =~ s/\.mozilla\.com$//;
+    
+        my $rrd = $zxtm{$tm}{rrd};
+	
+        $rrd->graph(
+	  title => "$tm_name Load",
+	  destination => "graphs/",
+	  basename => "${tm}_cpu",
+          sources => [ qw(cpu_busy_sys cpu_busy_user cpu_idle) ],
+	  source_labels => [ "System", "User", "Idle" ],
+	  source_colors => [ qw(ff0000 aa0000 aaaaff) ],
+	  source_drawtypes => [ qw(AREA STACK STACK) ],
+	  vertical_label => "% Load",
+	  extended_legend => 1,
+          "VDEF:cpu_busyAVERAGE=cpu_busy,AVERAGE" => "",
+          "HRULE:cpu_busyAVERAGE#0000aa:Average Busy" => "",
+          "VDEF:cpu_idleAVERAGE=cpu_idle,AVERAGE" => "",
+          "HRULE:cpu_idleAVERAGE#0000ff:Average Idle" => "",	  
+        );
+        $rrd->graph(
+	  title => "$tm_name SSL",
+	  destination => "graphs/",
+	  basename => "${tm}_ssl",
+          sources => [ qw(ssl_cipher_decrypts ssl_cipher_encrypts) ],
+	  source_labels => [ "ssl_decrypts", "ssl_encrypts" ],
+	  vertical_label => "Ops/s",
+	  extended_legend => 1,
+          "VDEF:ssl_cipher_decryptsAVERAGE=ssl_cipher_decrypts,AVERAGE" => "",
+          "HRULE:ssl_cipher_decryptsAVERAGE#0000aa:Average Decrypts" => "",
+          "VDEF:ssl_cipher_encryptsAVERAGE=ssl_cipher_encrypts,AVERAGE" => "",
+          "HRULE:ssl_cipher_encryptsAVERAGE#0000ff:Average Encrypts" => "",	  
+        );
+	$rrd->graph(
+	  title => "$tm_name SSL Connections",
+	  destination => "graphs/",
+	  basename => "${tm}_sslcon",
+          sources => [ qw(ssl_connections) ],
+	  source_labels => [ "ssl_connections" ],
+	  vertical_label => "Conn/s",
+	  extended_legend => 1,
+          "VDEF:ssl_connectionsAVERAGE=ssl_connections,AVERAGE" => "",
+          "HRULE:ssl_connectionsAVERAGE#0000aa:Average Decrypts" => "",
+        );
+	
+	$rrd->graph(
+	  title => "$tm_name Traffic",
+	  destination => "graphs/",
+	  basename => "${tm}_traffic",
+          sources => [ qw(total_bytes_in total_bytes_out) ],
+	  source_labels => [ "bytes_in", "bytes_out" ],
+	  vertical_label => "Bytes/s",
+	  extended_legend => 1,
+          "VDEF:total_bytes_inAVERAGE=total_bytes_in,AVERAGE" => "",
+          "HRULE:total_bytes_inAVERAGE#0000aa:Average Bytes In" => "",
+          "VDEF:total_bytes_outAVERAGE=total_bytes_out,AVERAGE" => "",
+          "HRULE:total_bytes_outAVERAGE#0000ff:Average Bytes Out" => "",	  
+        );
+
+	$rrd->graph(
+	  title => "$tm_name Hits",
+	  destination => "graphs/",
+	  basename => "${tm}_hits",
+          sources => [ qw(total_conn total_requests) ],
+	  source_labels => [ "Connections", "Requests" ],
+	  extended_legend => 1,	  
+          "VDEF:total_requestsAVERAGE=total_requests,AVERAGE" => "",
+          "HRULE:total_requestsAVERAGE#0000aa:Average Requests" => "",
+        );
+	
+	$rrd->graph(
+	  title => "$tm_name Child Processes",
+	  destination => "graphs/",
+	  basename => "${tm}_childs",
+          sources => [ qw(child_processes) ],
+	  source_labels => [ "Child Processes" ],
+	  extended_legend => 1,	  
+          "VDEF:child_processesAVERAGE=child_processes,AVERAGE" => "",
+          "HRULE:child_processesAVERAGE#0000aa:Average Children" => "",
+        );
+
+    }
+ }
+
+__END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+ZXTM Grapher
+
+=head1 VERSION
+
+version 0.001
+
+=head1 AUTHOR
+
+Philippe M. Chiasson <gozer@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2014 by Philippe M. Chiasson.
+
+This is free software, licensed under:
+
+  Mozilla Public License Version 2.0
+
+=cut
